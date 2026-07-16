@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm install
+          npm install -D @capacitor/assets
+
+      - name: Add Android Platform
+        run: npx cap add android || true
+
+      - name: Generate App Logos & Icons
+        run: |
+          # assets ফোল্ডারে থাকা লোগোকে অ্যান্ড্রয়েডের সিস্টেমে রূপান্তর করবে
+          npx capacitor-assets generate --android
+
+      - name: Sync Android
+        run: npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: short-ai-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
