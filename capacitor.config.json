@@ -1,0 +1,6 @@
+{
+  "appId": "com.siam.shortai",
+  "appName": "Short AI",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
