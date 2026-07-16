@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Short ai</title>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #000000;
+            --bottom-glow: radial-gradient(circle at bottom, #091c3d 0%, #000000 65%);
+            --text-main: #ffffff;
+            --text-muted: #86868b;
+            --input-bg: #151517;
+            --msg-bg: #182854;
+            --accent: #2563eb;
+        }
+
+        /* লং-প্রেস ও টেক্সট সিলেকশন ১০০% বন্ধ করার জন্য গ্লোবাল সিএসএস হ্যাক */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            
+            /* টেক্সট সিলেকশন ডিজেবল */
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            
+            /* মোবাইল সিলেকশন আউটলাইন ও লং-প্রেস কলআউট মেনু বন্ধ */
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none !important;
+        }
+
+        /* শুধুমাত্র টাইপিং করার জন্য ইনপুট ফিল্ডে সিলেকশন এলাও থাকবে */
+        input, textarea, [contenteditable="true"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background: var(--bottom-glow);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            /* কিবোর্ড ট্রানজিশন স্মুথ করার জন্য */
+            transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            will-change: height;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Top Header Styling */
+        .app-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            z-index: 10;
+        }
+
+        /* 4-bar grid logo exactly like the image */
+        .app-logo {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            width: 22px;
+            height: 22px;
+        }
+
+        .app-logo span {
+            background-color: #ffffff;
+            border-radius: 2px;
+        }
+
+        .logo-large {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 60px;
+            height: 60px;
+            margin-bottom: 24px;
+        }
+
+        .logo-large span {
+            background-color: #ffffff;
+            border-radius: 4px;
+        }
+
+        .app-header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .app-header h1 span {
+            font-weight: 400;
+            color: #ffffff;
+            margin-left: 4px;
+        }
+
+        /* Main Content Core */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Welcome Interface */
+        .welcome-interface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 5;
+        }
+
+        .welcome-interface.hidden {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+            pointer-events: none;
+        }
+
+        .welcome-text {
+            font-size: 1.9rem;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+
+        .welcome-text span {
+            font-size: 0.95rem;
+            color: #ffffff;
+            opacity: 0.8;
+            display: block;
+            margin-top: 8px;
+            font-weight: 400;
+            letter-spacing: 0px;
+        }
+
+        /* Language Buttons Layout */
+        .language-container {
+            position: absolute;
+            right: 25px;
+            bottom: 110px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+            z-index: 6;
+            transition: opacity 0.3s ease;
+        }
+
+        .lang-btn {
+            background-color: rgba(30, 30, 35, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        /* Curved Arrow Icon Match */
+        .lang-btn i {
+            font-size: 0.9rem;
+            transform: rotate(-45deg);
+            color: #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        /* Active State (Selection) */
+        .lang-btn.active {
+            background-color: #1e3a8a;
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .lang-btn.active i {
+            transform: rotate(0deg);
+        }
+
+        /* Chat interface scroll area */
+        .chat-interface {
+            flex: 1;
+            padding: 20px 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .chat-interface.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .chat-interface::-webkit-scrollbar {
+            width: 0px;
+        }
+
+        /* Message Bubbles - Exact Styling Match */
+        .message {
+            max-width: 80%;
+            padding: 14px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.45;
+            word-wrap: break-word;
+            animation: messageSlideIn 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        @keyframes messageSlideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background-color: var(--msg-bg);
+            color: #ffffff;
+            align-self: flex-end;
+            border-top-right-radius: 20px;
+        }
+
+        .message.ai {
+            background-color: var(--msg-bg);
+            color: #ffffff;
+            align-self: flex-start;
+            border-top-left-radius: 20px;
+        }
+
+        .message.error {
+            background-color: #4a1212;
+            border: 1px solid #7f1d1d;
+            color: #fca5a5;
+            align-self: center;
+            font-size: 0.85rem;
+            border-radius: 12px;
+        }
+
+        /* Smooth Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 16px 22px;
+            background-color: var(--msg-bg);
+            border-radius: 20px;
+            align-self: flex-start;
+            animation: messageSlideIn 0.25s ease-out;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            animation: smoothBounce 1.3s infinite ease-in-out both;
+            opacity: 0.7;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes smoothBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
+        }
+
+        /* Dynamic Sticky Bottom input area (Zero keyboard jumps) */
+        .input-container {
+            padding: 20px;
+            background: transparent;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            will-change: transform;
+        }
+
+        .input-bar {
+            background-color: var(--input-bg);
+            border: 1.5px solid #1c1c1e;
+            border-radius: 40px;
+            padding: 6px 6px 6px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #user-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 1.05rem;
+            padding: 8px 0;
+        }
+
+        #user-input::placeholder {
+            color: #444446;
+        }
+
+        /* Send Button exact color and angle */
+        #send-btn {
+            background-color: #122854;
+            color: #ffffff;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.15rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #send-btn i {
+            transform: rotate(0deg);
+        }
+
+        #send-btn:hover {
+            background-color: #1b3875;
+        }
+
+        #send-btn:active {
+            transform: scale(0.92);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="app-header">
+            <div class="app-logo">
+                <span></span><span></span>
+                <span></span><span></span>
+            </div>
+            <h1>Short<span>ai</span></h1>
+        </div>
+
+        <!-- Main Display Content -->
+        <div class="main-content">
+            
+            <!-- 1st Interface: Welcome Screen -->
+            <div class="welcome-interface" id="welcome-view">
+                <div class="logo-large">
+                    <span></span><span></span>
+                    <span></span><span></span>
+                </div>
+                <div class="welcome-text">
+                    Weelcome,<span>From Siam With Short ai</span>
+                </div>
+            </div>
+
+            <!-- Language Buttons Area -->
+            <div class="language-container" id="lang-container">
+                <button class="lang-btn" id="lang-en" onclick="selectLanguage('en')">
+                    <i class="fa-solid fa-reply"></i> English
+                </button>
+                <button class="lang-btn" id="lang-bn" onclick="selectLanguage('bn')">
+                    <i class="fa-solid fa-reply"></i> Bangla
+                </button>
+            </div>
+
+            <!-- 2nd Interface: Real-time Chat -->
+            <div class="chat-interface" id="chat-view"></div>
+            
+        </div>
+
+        <!-- Smooth Sliding Input Drawer -->
+        <div class="input-container" id="input-drawer">
+            <div class="input-bar">
+                <input type="text" id="user-input" placeholder="Ask with Short ai" autocomplete="off">
+                <button id="send-btn">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // মাউসের রাইট ক্লিক এবং লং-প্রেসের ডিফল্ট আচরণ পুরোপুরি ডিজেবল করার গ্লোবাল স্ক্রিপ্ট
+        window.addEventListener('contextmenu', function (e) { 
+            e.preventDefault(); 
+            return false;
+        });
+
+        // মোবাইল ডিভাইসের টাচ-হোল্ড (লং-প্রেস) ইভেন্টগুলো ডিজেবল করার প্রোটেকশন
+        document.addEventListener('touchstart', function(e) {
+            // শুধুমাত্র ইনপুট বক্স ছাড়া অন্য কোথাও লং-প্রেস প্রতিরোধ করবে
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                const target = e.target;
+                target.style.webkitUserSelect = 'none';
+                target.style.webkitTouchCallout = 'none';
+            }
+        }, {passive: true});
+
+        // আপনার সুপার-ফাস্ট API কি ও এন্ডপয়েন্ট কনফিগারেশন
+        const API_KEY = "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"; 
+        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+        const welcomeView = document.getElementById('welcome-view');
+        const chatView = document.getElementById('chat-view');
+        const langContainer = document.getElementById('lang-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const inputDrawer = document.getElementById('input-drawer');
+
+        let activeLanguage = 'default'; // default, en, bn
+        let firstMessageSent = false;
+
+        // ডেভলপার আইডেন্টিটি রুলস
+        const baseSystemInstruction = `You are a helpful AI assistant named "Short AI". 
+        Your creator, developer, and owner is "মোঃ শাহরিয়ার হাসান সিয়াম" (Md Sahriar hasan Siam). 
+        If anyone asks who made you, built you, created you, or asks any similar questions about your background or developer, you must proudly answer that you were created by "মোঃ শাহরিয়ার হাসান সিয়াম (Md Sahriar hasan Siam)". Always stay in character as Short AI.`;
+
+        // ল্যাঙ্গুয়েজ সিলেকশন লজিক (১০০% কাজ করবে)
+        function selectLanguage(lang) {
+            const btnEn = document.getElementById('lang-en');
+            const btnBn = document.getElementById('lang-bn');
+
+            if (activeLanguage === lang) {
+                // ডি-সিলেক্ট করলে ডিফল্ট মোডে ফিরে যাবে
+                activeLanguage = 'default';
+                btnEn.classList.remove('active');
+                btnBn.classList.remove('active');
+            } else {
+                activeLanguage = lang;
+                if (lang === 'en') {
+                    btnEn.classList.add('active');
+                    btnBn.classList.remove('active');
+                } else if (lang === 'bn') {
+                    btnBn.classList.add('active');
+                    btnEn.classList.remove('active');
+                }
+            }
+        }
+
+        // কিবোর্ড পপআপে ডপ বা লাফানো বন্ধ করার স্মুথ ট্রানজিশন হ্যাক
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                if (keyboardHeight > 100) {
+                    // কিবোর্ড ওপেন হলে জাস্ট স্মুথ অ্যানিমেশনে ড্রয়ার ট্রান্সলেট হবে
+                    inputDrawer.style.transform = `translateY(-${keyboardHeight - 15}px)`;
+                } else {
+                    inputDrawer.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        // ওয়েলকাম ভিউ থেকে চ্যাট ভিউতে অ্যানিমেটেড ট্রানজিশন
+        function transitionUI() {
+            if (!firstMessageSent) {
+                welcomeView.classList.add('hidden');
+                langContainer.style.opacity = '0';
+                setTimeout(() => {
+                    langContainer.style.display = 'none';
+                }, 300);
+                chatView.classList.add('visible');
+                firstMessageSent = true;
+            }
+        }
+
+        function appendMsg(text, sender) {
+            const msgBox = document.createElement('div');
+            msgBox.classList.add('message', sender);
+            
+            // বোল্ড ও নতুন লাইন কাস্টম ফরম্যাটিং
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\n/g, '<br>');
+            
+            msgBox.innerHTML = formattedText;
+            chatView.appendChild(msgBox);
+            chatView.scrollTop = chatView.scrollHeight;
+        }
+
+        function showLoader() {
+            const loader = document.createElement('div');
+            loader.classList.add('typing-indicator');
+            loader.id = 'typing-loader';
+            loader.innerHTML = '<span></span><span></span><span></span>';
+            chatView.appendChild(loader);
+            chatView.scrollTop = chatView.scrollHeight;
+        }
+
+        function removeLoader() {
+            const loader = document.getElementById('typing-loader');
+            if (loader) loader.remove();
+        }
+
+        async function fetchAIResponse(userPrompt) {
+            showLoader();
+
+            // ল্যাঙ্গুয়েজ সেটআপ অনুযায়ী কঠোর নির্দেশাবলি
+            let activeInstruction = baseSystemInstruction;
+            if (activeLanguage === 'bn') {
+                activeInstruction += " CRITICAL: You must write and respond strictly in Bengali language only.";
+            } else if (activeLanguage === 'en') {
+                activeInstruction += " CRITICAL: You must write and respond strictly in English language only.";
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile", 
+                        messages: [
+                            { role: "system", content: activeInstruction },
+                            { role: "user", content: userPrompt }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                removeLoader();
+
+                if (data.error) {
+                    appendMsg(`API Error: ${data.error.message}`, 'error');
+                    return;
+                }
+
+                if (data.choices && data.choices[0].message && data.choices[0].message.content) {
+                    const reply = data.choices[0].message.content;
+                    appendMsg(reply, 'ai');
+                } else {
+                    appendMsg("দুঃখিত, কোনো রেসপন্স জেনারেট করা যায়নি।", 'ai');
+                }
+
+            } catch (error) {
+                removeLoader();
+                appendMsg("সার্ভার বা কানেকশন ত্রুটি! অনুগ্রহ করে আবার চেষ্টা করুন।", 'error');
+                console.error(error);
+            }
+        }
+
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            transitionUI();
+            appendMsg(text, 'user');
+            userInput.value = '';
+            
+            fetchAIResponse(text);
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+  </html>
